@@ -1,0 +1,1369 @@
+<title>SkinSense</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout: a step rail on the left (a row of numbers on phones) beside one consultation panel at a time; results stack as report sections. */
+:root {
+  --bg: #EEF3F1;
+  --surface: #FFFFFF;
+  --fg: #10252A;
+  --muted: #566D73;
+  --line: #D3DEDB;
+  --accent: #17766A;
+  --accent-fg: #FFFFFF;
+  --accent-soft: #DCEEE9;
+  --warm-soft: #FBEBE4;
+  --warm-line: #EBC9BC;
+  --good: #2B7A4B;
+  --warn: #A96A0F;
+  --bad: #B03A2E;
+  --focus: #2F6FEB;
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0C1819; --surface: #132325; --fg: #E4EFEC; --muted: #8EA6AB; --line: #243B3E;
+    --accent: #4DBFAB; --accent-fg: #06201B; --accent-soft: #163630;
+    --warm-soft: #33241F; --warm-line: #5A3B31;
+    --good: #5CC48A; --warn: #E0A64A; --bad: #EE8577; --focus: #7FA8FF;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0C1819; --surface: #132325; --fg: #E4EFEC; --muted: #8EA6AB; --line: #243B3E;
+  --accent: #4DBFAB; --accent-fg: #06201B; --accent-soft: #163630;
+  --warm-soft: #33241F; --warm-line: #5A3B31;
+  --good: #5CC48A; --warn: #E0A64A; --bad: #EE8577; --focus: #7FA8FF;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  padding-block: 24px 64px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.app { max-width: 1060px; margin: 0 auto; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Header */
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.01em; }
+.brand svg { width: 26px; height: 26px; color: var(--accent); }
+.tagline { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.intro { margin: 32px 0 28px; max-width: 640px; }
+.intro h1 { font-family: var(--font-display); font-weight: 700; font-size: clamp(30px, 5.4vw, 46px); line-height: 1.08; letter-spacing: -0.02em; margin: 0 0 12px; text-wrap: balance; }
+.intro p { margin: 0; color: var(--muted); font-size: 17px; max-width: 56ch; }
+
+.banner { background: var(--warm-soft); border: 1px solid var(--warm-line); border-radius: 12px; padding: 12px 16px; margin-bottom: 20px; }
+
+/* Shell */
+.shell { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 40px; align-items: start; }
+.stage { min-width: 0; }
+.rail { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; position: sticky; top: 16px; }
+.rail button { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 12px; padding: 10px 12px; color: var(--muted); font-weight: 500; font-size: 15px; }
+.rail button:disabled { opacity: 0.55; cursor: default; }
+.rail .num { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--line); font-family: var(--font-mono); font-size: 13px; background: var(--surface); }
+.rail li[aria-current="step"] button { background: var(--surface); border-color: var(--line); color: var(--fg); }
+.rail li[aria-current="step"] .num { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.rail li.done .num { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: clamp(18px, 4vw, 32px); }
+.panel h2 { font-family: var(--font-display); font-weight: 700; font-size: 27px; letter-spacing: -0.01em; margin: 0 0 4px; }
+.lede { margin: 0 0 26px; color: var(--muted); max-width: 60ch; }
+fieldset { border: 0; margin: 0 0 28px; padding: 0; min-width: 0; }
+legend { font-weight: 700; padding: 0; margin-bottom: 2px; }
+.hint { margin: 0 0 10px; color: var(--muted); font-size: 14px; }
+.field-label { display: block; font-weight: 700; margin-bottom: 2px; }
+
+/* Chips and option rows */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { position: relative; }
+.chip input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.chip span { display: inline-flex; align-items: center; padding: 9px 15px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg); font-size: 15px; transition: background 0.15s, border-color 0.15s; }
+.chip input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 500; }
+.chip input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.opt { position: relative; display: block; }
+.opt input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.opt span { display: block; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--bg); font-size: 15px; }
+.opt input:checked + span { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.opt input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+select, textarea, input[type="text"] { width: 100%; background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; }
+textarea { min-height: 84px; resize: vertical; }
+.check { display: flex; gap: 10px; align-items: flex-start; margin-top: 12px; font-size: 15px; }
+.check input { margin-top: 4px; width: 18px; height: 18px; accent-color: var(--accent); }
+
+.btn { font-weight: 700; font-size: 15px; padding: 12px 20px; border-radius: 12px; border: 1px solid transparent; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); }
+.btn.ghost { background: transparent; border-color: var(--line); color: var(--fg); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; align-items: center; margin-top: 8px; }
+.actions .right { display: flex; flex-wrap: wrap; gap: 10px; }
+.error { margin: 0 0 14px; padding: 10px 14px; border-radius: 10px; background: var(--warm-soft); border: 1px solid var(--warm-line); color: var(--fg); }
+
+/* Photo step */
+.photo-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; margin-bottom: 22px; }
+.drop { position: relative; aspect-ratio: 4 / 5; max-width: 100%; border: 2px dashed var(--line); border-radius: 18px; background: var(--bg); overflow: hidden; display: grid; place-items: center; text-align: center; padding: 20px; color: var(--muted); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop.has { border-style: solid; padding: 0; }
+.drop img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.drop-empty svg { width: 44px; height: 44px; color: var(--accent); margin-bottom: 8px; }
+.drop-empty strong { display: block; color: var(--fg); }
+.btnrow { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+.tips { margin: 14px 0; padding-left: 20px; color: var(--fg); }
+.tips li { margin-bottom: 6px; }
+.privacy { font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 14px; margin: 14px 0 0; }
+
+/* Working view */
+.work { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 28px; align-items: center; margin-top: 18px; }
+.scanbox { position: relative; aspect-ratio: 4 / 5; border-radius: 16px; overflow: hidden; background: var(--bg); border: 1px solid var(--line); max-width: 100%; }
+.scanbox img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.scanbox::after { content: ""; position: absolute; left: 0; right: 0; height: 24%; top: -24%; background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 55%, transparent) 92%, var(--accent)); animation: sweep 2.6s ease-in-out infinite; }
+.answers-only { aspect-ratio: 4 / 5; border-radius: 16px; background: var(--accent-soft); display: grid; place-items: center; padding: 20px; text-align: center; color: var(--fg); max-width: 100%; }
+.status { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
+.status li { display: flex; align-items: center; gap: 10px; color: var(--muted); }
+.status li::before { content: ""; width: 12px; height: 12px; border-radius: 50%; border: 2px solid var(--line); flex: none; }
+.status li.doing { color: var(--fg); font-weight: 500; }
+.status li.doing::before { border-color: var(--accent); background: var(--accent-soft); }
+.status li.done::before { border-color: var(--accent); background: var(--accent); }
+.bar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; margin-bottom: 12px; }
+.bar i { display: block; height: 100%; width: 0%; background: var(--accent); border-radius: 999px; transition: width 0.4s; }
+.bar.indeterminate i { width: 35%; animation: slide 1.4s ease-in-out infinite; }
+@keyframes sweep { 0% { top: -24%; } 100% { top: 100%; } }
+@keyframes slide { 0% { margin-left: -35%; } 100% { margin-left: 100%; } }
+@media (prefers-reduced-motion: reduce) {
+  .scanbox::after, .bar.indeterminate i { animation: none; }
+  .scanbox::after { top: 38%; }
+  .bar.indeterminate i { margin-left: 0; }
+}
+
+/* Report */
+.report-head { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start; }
+.report-head img { width: 112px; height: 140px; object-fit: cover; border-radius: 14px; border: 1px solid var(--line); }
+.report-head.nophoto { grid-template-columns: minmax(0, 1fr); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.tag { display: inline-block; font-size: 13px; padding: 3px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--fg); border: 1px solid transparent; }
+.tag.plain { background: var(--bg); border-color: var(--line); color: var(--muted); }
+.tag.mono { font-family: var(--font-mono); font-size: 12px; }
+.rsec { margin-top: 38px; }
+.rsec h3 { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: -0.01em; margin: 0 0 14px; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.card { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--surface); min-width: 0; }
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 10px; }
+.card-head strong { font-size: 17px; line-height: 1.3; }
+.meter { display: flex; gap: 4px; margin: 0 0 4px; }
+.meter i { flex: 1; height: 8px; border-radius: 3px; background: var(--line); }
+.meter.good i.on { background: var(--good); }
+.meter.warn i.on { background: var(--warn); }
+.meter.bad i.on { background: var(--bad); }
+.sev { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+.card dl { margin: 0; display: grid; gap: 8px; font-size: 15px; }
+.card dt { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.card dd { margin: 0; }
+.barrier { display: flex; gap: 14px; align-items: flex-start; border: 1px solid var(--line); border-radius: 14px; padding: 16px; }
+.pill { flex: none; font-weight: 700; font-size: 14px; padding: 4px 12px; border-radius: 999px; border: 1px solid currentColor; }
+.pill.good { color: var(--good); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.tabs button { padding: 8px 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-weight: 500; }
+.tabs button[aria-selected="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.steps { list-style: none; margin: 0; padding: 0; counter-reset: s; display: grid; gap: 12px; }
+.step { counter-increment: s; display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 12px; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; }
+.step::before { content: counter(s); font-family: var(--font-mono); font-size: 14px; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); }
+.step-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px; }
+.step p { margin: 0 0 4px; }
+.why { color: var(--muted); font-size: 15px; }
+.taglist { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.list { display: grid; gap: 10px; }
+.row { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.row strong { display: block; margin-bottom: 2px; }
+.row p { margin: 0 0 4px; }
+.label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.callout { background: var(--warm-soft); border: 1px solid var(--warm-line); border-radius: 14px; padding: 16px 18px; }
+.callout ul { margin: 6px 0 0; padding-left: 20px; }
+.disclaimer { margin-top: 30px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+.copybox { width: 100%; margin-top: 12px; min-height: 160px; font-family: var(--font-mono); font-size: 13px; }
+
+@media (max-width: 760px) {
+  .shell { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .rail { position: static; grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .rail button { grid-template-columns: minmax(0, 1fr); justify-items: center; padding: 8px 4px; }
+  .rail .lbl { display: none; }
+  .rows, .two, .photo-grid, .work { grid-template-columns: minmax(0, 1fr); }
+  .drop { aspect-ratio: 1 / 1; }
+  .scanbox, .answers-only { max-width: 240px; }
+  .report-head img { width: 88px; height: 110px; }
+}
+
+/* Navigation and roles */
+.top-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.role { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); }
+.role.admin { background: var(--accent-soft); color: var(--fg); border-color: var(--accent); }
+.nav { display: flex; flex-wrap: wrap; gap: 6px; margin: 22px 0 0; padding: 0; list-style: none; }
+.nav button { padding: 9px 18px; border-radius: 999px; border: 1px solid var(--line); background: var(--bg); font-weight: 500; }
+.nav button[aria-current="page"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.nav button.adm::after { content: " (admin)"; font-size: 12px; opacity: 0.75; }
+.view-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: 12px; margin: 26px 0 16px; }
+.view-head h2 { font-family: var(--font-display); font-weight: 700; font-size: 28px; letter-spacing: -0.01em; margin: 0; }
+.view-head p { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+.toolbar input[type="text"], .toolbar select { width: auto; flex: 1 1 200px; min-width: 0; }
+.list-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: start; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--surface); }
+.list-row + .list-row { margin-top: 10px; }
+.list-row h3 { margin: 0 0 2px; font-size: 17px; }
+.list-row p { margin: 0 0 6px; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.btn.small { padding: 7px 14px; font-size: 14px; border-radius: 10px; }
+.btn.danger { border-color: var(--bad); color: var(--bad); background: transparent; }
+.btn.danger.armed { background: var(--bad); color: var(--bg); }
+.empty { border: 1px dashed var(--line); border-radius: 14px; padding: 28px 18px; text-align: center; color: var(--muted); }
+.formcard { border: 1px solid var(--line); border-radius: 16px; padding: 18px; background: var(--surface); margin-bottom: 18px; }
+.formcard .two { margin-bottom: 14px; }
+.fine { font-size: 14px; color: var(--muted); }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.stat { border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; background: var(--surface); }
+.stat b { display: block; font-family: var(--font-display); font-size: 30px; line-height: 1.1; }
+.stat span { color: var(--muted); font-size: 14px; }
+.hbars { display: grid; gap: 8px; margin: 0 0 24px; }
+.hbar { display: grid; grid-template-columns: minmax(90px, 160px) minmax(0, 1fr) 40px; gap: 10px; align-items: center; font-size: 14px; }
+.hbar .track { height: 12px; border-radius: 6px; background: var(--line); overflow: hidden; }
+.hbar .track i { display: block; height: 100%; background: var(--accent); }
+.hbar .n { font-family: var(--font-mono); text-align: right; }
+.pick-note { margin: 12px 0 0; color: var(--muted); font-size: 14px; }
+@media (max-width: 760px) { .list-row { grid-template-columns: minmax(0, 1fr); } .row-actions { justify-content: flex-start; } }
+[hidden] { display: none !important; }
+</style>
+
+<div class="app" id="app">
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.5C12 2.5 5 10 5 14.5a7 7 0 0 0 14 0C19 10 12 2.5 12 2.5Z"/></svg>
+      <span>SkinSense</span>
+    </div>
+    <div class="top-right"><span class="tagline">Skin analysis assistant</span><span class="role" id="who">Guest</span></div>
+  </header>
+
+  <ul class="nav" id="nav" aria-label="Sections" hidden>
+    <li><button type="button" data-view="analyze" aria-current="page">New analysis</button></li>
+    <li id="nav-history" hidden><button type="button" data-view="history">My history</button></li>
+    <li id="nav-catalog" hidden><button type="button" class="adm" data-view="catalog">Catalog</button></li>
+    <li id="nav-usage" hidden><button type="button" class="adm" data-view="usage">Usage report</button></li>
+  </ul>
+  <p class="fine" id="guest-note" hidden style="margin-top:14px">You are using SkinSense as a guest. Sign in to Claude to save your reports and see your history.</p>
+
+  <div id="v-analyze">
+
+  <div class="intro">
+    <h1>Find out what your skin needs.</h1>
+    <p>Answer a few questions, add a photo, and get a routine and product guide built around what Claude sees in the photo and what you tell it.</p>
+  </div>
+
+  <div class="banner" id="noai" hidden>The AI analysis needs this page to run inside Claude, with access to Claude switched on. You can fill in the questions, but the report cannot be written here.</div>
+
+  <form id="f" novalidate>
+    <div class="shell">
+      <ol class="rail" id="rail" aria-label="Steps"></ol>
+
+      <div class="stage">
+        <!-- Step 1 -->
+        <section class="panel" id="p1" aria-labelledby="h-p1">
+          <h2 id="h-p1">Your skin</h2>
+          <p class="lede">Takes about two minutes. Choose what fits best.</p>
+
+          <fieldset>
+            <legend>Skin type</legend>
+            <p class="hint">How does your skin feel by midday with no product on it?</p>
+            <div class="chips" id="c-type"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>What bothers you most?</legend>
+            <p class="hint">Pick everything that applies.</p>
+            <div class="chips" id="c-concern"></div>
+          </fieldset>
+
+          <fieldset>
+            <legend>How does your skin react to strong midday sun without sunscreen?</legend>
+            <p class="hint">This decides how much sun protection you need and how likely dark marks are to linger.</p>
+            <div class="rows" id="c-sun"></div>
+          </fieldset>
+
+          <div class="two" style="margin-bottom:6px">
+            <div>
+              <label class="field-label" for="age">Age range</label>
+              <select id="age">
+                <option value="">Prefer not to say</option>
+                <option>Under 18</option>
+                <option>18 to 24</option>
+                <option>25 to 34</option>
+                <option>35 to 44</option>
+                <option>45 to 54</option>
+                <option>55 or older</option>
+              </select>
+            </div>
+            <div>
+              <label class="check" style="margin-top:26px"><input type="checkbox" id="preg"><span>I am pregnant, trying to conceive, or breastfeeding</span></label>
+            </div>
+          </div>
+
+          <p class="error" id="err1" role="alert" hidden></p>
+          <div class="actions" style="margin-top:22px">
+            <button type="button" class="btn ghost" id="sample-answers">Fill with example answers</button>
+            <button type="button" class="btn primary" id="next1">Next: allergies and habits</button>
+          </div>
+        </section>
+
+        <!-- Step 2 -->
+        <section class="panel" id="p2" aria-labelledby="h-p2" hidden>
+          <h2 id="h-p2">Allergies and habits</h2>
+          <p class="lede">Your plan will leave out anything you react to and will speak to the habits that affect skin most.</p>
+
+          <fieldset>
+            <legend>Allergies or ingredients that irritate you</legend>
+            <p class="hint">Pick everything that applies.</p>
+            <div class="chips" id="c-allergy"></div>
+            <div style="margin-top:12px">
+              <label class="field-label" for="otherAllergy">Anything else?</label>
+              <input type="text" id="otherAllergy" maxlength="300" placeholder="For example: a product that made my face burn">
+            </div>
+          </fieldset>
+
+          <fieldset>
+            <legend>Habits</legend>
+            <p class="hint">Be honest. This is only used to tailor the advice.</p>
+            <div class="chips" id="c-habit"></div>
+          </fieldset>
+
+          <div class="two" style="margin-bottom:22px">
+            <div>
+              <label class="field-label" for="spf">How often do you wear sunscreen?</label>
+              <select id="spf">
+                <option value="">Select</option>
+                <option>Every day</option>
+                <option>Most days</option>
+                <option>Sometimes</option>
+                <option>Rarely</option>
+                <option>Never</option>
+              </select>
+            </div>
+            <div>
+              <label class="field-label" for="routine">Your current routine (optional)</label>
+              <textarea id="routine" maxlength="600" placeholder="Products you use now, morning and evening"></textarea>
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" class="btn ghost" id="back2">Back</button>
+            <button type="button" class="btn primary" id="next2">Next: photo</button>
+          </div>
+        </section>
+
+        <!-- Step 3 -->
+        <section class="panel" id="p3" aria-labelledby="h-p3" hidden>
+          <h2 id="h-p3">Your photo</h2>
+          <p class="lede">Claude looks at visible patterns such as redness, dark marks, flaking, shine and texture. A clear photo gives the most useful report.</p>
+
+          <div class="photo-grid">
+            <div class="drop" id="drop" tabindex="0" role="button" aria-label="Add a photo. Press Enter to choose a file, or drop one here.">
+              <img id="prev" alt="Preview of your photo" hidden>
+              <div class="drop-empty" id="dropEmpty">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5A2.5 2.5 0 0 1 6.5 6h1.2l1.1-1.6A1.5 1.5 0 0 1 10 3.7h4a1.5 1.5 0 0 1 1.2.7L16.3 6h1.2A2.5 2.5 0 0 1 20 8.5v8A2.5 2.5 0 0 1 17.5 19h-11A2.5 2.5 0 0 1 4 16.5v-8Z"/><circle cx="12" cy="12.5" r="3.2"/></svg>
+                <strong>Drop a photo here</strong>
+                <span>or use the buttons</span>
+              </div>
+            </div>
+
+            <div class="photo-side">
+              <div class="btnrow">
+                <button type="button" class="btn primary" id="btnCam">Take a photo</button>
+                <button type="button" class="btn ghost" id="btnPick">Choose from gallery</button>
+                <button type="button" class="btn ghost" id="btnRemove" hidden>Remove</button>
+              </div>
+              <input type="file" id="camInput" accept="image/*" capture="user" hidden>
+              <input type="file" id="fileInput" accept="image/*" hidden>
+              <p class="hint" id="camNote">On a phone, Take a photo opens your camera. On a computer it opens the file picker.</p>
+              <ul class="tips">
+                <li>Face a window, or sit outside in shade. Natural light shows marks best.</li>
+                <li>Bare, clean skin. No makeup, filter or flash.</li>
+                <li>Camera at eye level, hair off your face, face centered.</li>
+              </ul>
+              <p class="privacy" id="privacy">Your photo is sent to Claude to write your report. This page does not store it. The first time you analyze, Claude asks you to allow this page to use it.</p>
+              <p class="hint" id="nophoto" hidden>Photo analysis is not available in this view. You can still get a plan from your answers.</p>
+            </div>
+          </div>
+
+          <p class="error" id="err3" role="alert" hidden></p>
+          <div class="actions">
+            <button type="button" class="btn ghost" id="back3">Back</button>
+            <div class="right">
+              <button type="button" class="btn ghost" id="skip">Skip photo, use my answers</button>
+              <button type="button" class="btn primary" id="analyze" disabled>Analyze my skin</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Working -->
+        <section class="panel" id="pw" aria-labelledby="h-pw" aria-live="polite" hidden>
+          <h2 id="h-pw">Analyzing your skin</h2>
+          <div class="work">
+            <div id="workVisual"></div>
+            <div>
+              <ul class="status">
+                <li id="s1" class="doing">Reading your photo and answers</li>
+                <li id="s2">Writing your routine and product guide</li>
+              </ul>
+              <div class="bar indeterminate" id="bar" role="progressbar" aria-label="Report progress"><i id="barFill"></i></div>
+              <p class="hint">This usually takes under a minute.</p>
+              <button type="button" class="btn ghost" id="stop">Stop</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Step 4 -->
+        <section class="panel" id="p4" aria-labelledby="h-p4" hidden>
+          <h2 id="h-p4">Your plan</h2>
+          <div id="report"></div>
+        </section>
+      </div>
+    </div>
+  </form>
+  </div>
+
+  <section id="v-history" hidden aria-labelledby="h-history">
+    <div class="view-head"><div><h2 id="h-history">My history</h2><p>Reports saved under your Claude account. Only you can see them. Photos are never stored.</p></div><span class="fine" id="history-count" aria-live="polite"></span></div>
+    <div class="toolbar"><input type="text" id="history-q" placeholder="Search your reports" aria-label="Search your reports"><select id="history-concern" aria-label="Filter by concern"></select></div>
+    <div id="history-list"></div>
+  </section>
+
+  <section id="v-catalog" hidden aria-labelledby="h-catalog">
+    <div class="view-head"><div><h2 id="h-catalog">Product catalog</h2><p>Administrators add, edit and delete the products that the safety rules choose from. Users see them in their reports.</p></div><span class="fine" id="catalog-count" aria-live="polite"></span></div>
+    <div id="catalog-form"></div>
+    <div class="toolbar"><input type="text" id="catalog-q" placeholder="Search products" aria-label="Search products"></div>
+    <div id="catalog-list"></div>
+  </section>
+
+  <section id="v-usage" hidden aria-labelledby="h-usage">
+    <div class="view-head"><div><h2 id="h-usage">Usage report</h2><p>Anonymous statistics about the analyses people have run.</p></div></div>
+    <div id="usage-body"></div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var arr = function (x) { return Array.isArray(x) ? x : []; };
+  var str = function (x) { return x == null ? '' : (typeof x === 'string' ? x : String(x)); };
+
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        var v = props[k];
+        if (v == null || v === false) return;
+        if (k === 'class') el.className = v;
+        else if (k === 'text') el.textContent = v;
+        else if (k.indexOf('on') === 0) el.addEventListener(k.slice(2), v);
+        else el.setAttribute(k, v === true ? '' : v);
+      });
+    }
+    var kids = Array.prototype.slice.call(arguments, 2);
+    (function add(list) {
+      list.forEach(function (kid) {
+        if (kid == null || kid === false) return;
+        if (Array.isArray(kid)) return add(kid);
+        el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+      });
+    })(kids);
+    return el;
+  }
+
+  // ---------- Options ----------
+  var OPT = {
+    type: [['oily', 'Oily'], ['dry', 'Dry'], ['combination', 'Combination'], ['normal', 'Normal'], ['unsure', 'Not sure']],
+    concern: [
+      ['acne', 'Pimples and breakouts'], ['blackheads', 'Blackheads'], ['dark spots', 'Dark spots or marks'],
+      ['redness', 'Redness'], ['dryness', 'Dryness or flaking'], ['oiliness', 'Excess oil'],
+      ['pores', 'Large pores'], ['fine lines', 'Fine lines'], ['dullness', 'Dull tone'],
+      ['dark circles', 'Dark circles'], ['sensitivity', 'Stinging or sensitivity'], ['texture', 'Rough texture']
+    ],
+    sun: [
+      ['burns easily, rarely tans', 'Burns easily, rarely tans'],
+      ['burns first, then tans a little', 'Burns first, then tans a little'],
+      ['tans easily, burns only sometimes', 'Tans easily, burns only sometimes'],
+      ['almost never burns', 'Almost never burns']
+    ],
+    allergy: [
+      ['none', 'None that I know of'], ['fragrance', 'Fragrance or perfume'], ['essential oils', 'Essential oils'],
+      ['tree nut oils', 'Tree nut oils'], ['lanolin', 'Lanolin'], ['sulfates', 'Sulfates'],
+      ['drying alcohols', 'Drying alcohols'], ['salicylates', 'Aspirin or salicylates'],
+      ['certain preservatives', 'Certain preservatives'], ['chemical sunscreen filters', 'Chemical sunscreens']
+    ],
+    habit: [
+      ['picks or squeezes pimples', 'Picking or squeezing pimples'], ['touches face often', 'Touching my face often'],
+      ['sleeps under 6 hours', 'Sleeping under 6 hours'], ['smokes or vapes', 'Smoking or vaping'],
+      ['long sun exposure or tanning', 'Long sun exposure or tanning'], ['sleeps with makeup on', 'Sleeping with makeup on'],
+      ['over-exfoliates', 'Scrubbing or exfoliating a lot'], ['very hot showers', 'Very hot showers'],
+      ['high stress', 'High stress'], ['drinks little water', 'Drinking little water'],
+      ['rarely washes pillowcases', 'Rarely washing pillowcases']
+    ]
+  };
+
+  function chips(id, name, kind, list) {
+    var box = $('#' + id);
+    list.forEach(function (p) {
+      var cls = name === 'sun' ? 'opt' : 'chip';
+      box.append(h('label', { class: cls }, h('input', { type: kind, name: name, value: p[0] }), h('span', { text: p[1] })));
+    });
+  }
+  chips('c-type', 'type', 'radio', OPT.type);
+  chips('c-concern', 'concern', 'checkbox', OPT.concern);
+  chips('c-sun', 'sun', 'radio', OPT.sun);
+  chips('c-allergy', 'allergy', 'checkbox', OPT.allergy);
+  chips('c-habit', 'habit', 'checkbox', OPT.habit);
+
+  $('#c-allergy').addEventListener('change', function (e) {
+    var t = e.target;
+    if (!t || t.name !== 'allergy' || !t.checked) return;
+    $$('input[name="allergy"]').forEach(function (i) {
+      if (t.value === 'none' ? i !== t : i.value === 'none') i.checked = false;
+    });
+  });
+
+  // ---------- Steps ----------
+  var STEPS = ['Skin profile', 'Allergies and habits', 'Photo', 'Your plan'];
+  var PANELS = ['p1', 'p2', 'p3', 'pw', 'p4'];
+  var step = 1, maxStep = 1, busy = false;
+  var photo = null, photoUrl = null, result = null, ctl = null, lastAnswers = null, HOOK = (window.SSHook = window.SSHook || {});
+
+  var rail = $('#rail');
+  STEPS.forEach(function (t, i) {
+    rail.append(h('li', null,
+      h('button', { type: 'button', 'data-step': String(i + 1), onclick: function () { if (!busy && i + 1 <= maxStep) goTo(i + 1); } },
+        h('span', { class: 'num', text: String(i + 1) }), h('span', { class: 'lbl', text: t }))));
+  });
+
+  function showPanel(id) {
+    PANELS.forEach(function (p) { $('#' + p).hidden = (p !== id); });
+  }
+  function goTo(n) {
+    step = n;
+    showPanel('p' + n);
+    $$('li', rail).forEach(function (li, i) {
+      var num = i + 1, btn = $('button', li);
+      var done = num < n && num <= maxStep;
+      li.classList.toggle('done', done);
+      if (num === n) li.setAttribute('aria-current', 'step'); else li.removeAttribute('aria-current');
+      $('.num', li).textContent = done ? '✓' : String(num);
+      btn.disabled = num > maxStep || busy;
+    });
+    try { $('#app').scrollIntoView({ block: 'start' }); } catch (e) {}
+  }
+  function setErr(id, msg) {
+    var el = $('#' + id);
+    el.textContent = msg || '';
+    el.hidden = !msg;
+  }
+
+  // ---------- Answers ----------
+  function vals(name) { return $$('input[name="' + name + '"]:checked').map(function (i) { return i.value; }); }
+  function one(name) { var i = $('input[name="' + name + '"]:checked'); return i ? i.value : ''; }
+  function collect() {
+    var allergies = vals('allergy');
+    var none = allergies.indexOf('none') !== -1;
+    return {
+      skin_type: one('type') || 'unsure',
+      concerns: vals('concern'),
+      sun_reaction: one('sun') || 'not given',
+      age_range: $('#age').value || 'not given',
+      pregnant_trying_or_breastfeeding: $('#preg').checked,
+      no_known_allergies: none,
+      allergies: allergies.filter(function (a) { return a !== 'none'; }),
+      other_allergies_or_irritants: $('#otherAllergy').value.trim().slice(0, 300),
+      habits: vals('habit'),
+      sunscreen_use: $('#spf').value || 'not given',
+      current_routine: $('#routine').value.trim().slice(0, 600)
+    };
+  }
+
+  $('#next1').addEventListener('click', function () {
+    if (!one('type')) return setErr('err1', 'Choose a skin type. Pick "Not sure" if you cannot tell.');
+    if (!vals('concern').length) return setErr('err1', 'Pick at least one concern so the plan knows what to focus on.');
+    setErr('err1', '');
+    maxStep = Math.max(maxStep, 2); goTo(2);
+  });
+  $('#back2').addEventListener('click', function () { goTo(1); });
+  $('#next2').addEventListener('click', function () { maxStep = Math.max(maxStep, 3); goTo(3); });
+  $('#back3').addEventListener('click', function () { goTo(2); });
+
+  function setChecked(name, values) {
+    $$('input[name="' + name + '"]').forEach(function (i) { i.checked = values.indexOf(i.value) !== -1; });
+  }
+  $('#sample-answers').addEventListener('click', function () {
+    setChecked('type', ['combination']);
+    setChecked('concern', ['acne', 'dark spots', 'oiliness']);
+    setChecked('sun', ['burns first, then tans a little']);
+    $('#age').value = '18 to 24';
+    setChecked('allergy', ['fragrance']);
+    setChecked('habit', ['picks or squeezes pimples', 'sleeps under 6 hours', 'touches face often']);
+    $('#spf').value = 'Rarely';
+    setErr('err1', '');
+  });
+
+  // ---------- AI availability ----------
+  var sample = null, imagesOk = true;
+  var aiReady = (async function () {
+    try { sample = (window.claude && window.claude.use) ? await window.claude.use('sample') : null; } catch (e) { sample = null; }
+    if (sample) {
+      try { var lim = await sample.limits(); imagesOk = !!(lim && lim.images); } catch (e) { imagesOk = false; }
+    }
+    updateAi();
+  })();
+  function updateAi() {
+    $('#noai').hidden = !!sample;
+    if (sample && !imagesOk) {
+      ['drop', 'camNote', 'privacy'].forEach(function (id) { $('#' + id).hidden = true; });
+      $('.photo-grid .btnrow').hidden = true;
+      $('.tips').hidden = true;
+      $('#nophoto').hidden = false;
+      $('#analyze').hidden = true;
+      $('#skip').textContent = 'Build my plan from my answers';
+      $('#skip').className = 'btn primary';
+    }
+    syncAnalyze();
+  }
+  function syncAnalyze() { $('#analyze').disabled = !photo || busy; }
+
+  // ---------- Photo ----------
+  function loadBitmap(file) {
+    if (window.createImageBitmap) {
+      return createImageBitmap(file, { imageOrientation: 'from-image' }).catch(function () { return createImageBitmap(file); });
+    }
+    return Promise.reject(new Error('no bitmap'));
+  }
+  async function normalize(file) {
+    try {
+      var bmp = await loadBitmap(file);
+      var max = 1600, s = Math.min(1, max / Math.max(bmp.width, bmp.height));
+      var c = document.createElement('canvas');
+      c.width = Math.round(bmp.width * s); c.height = Math.round(bmp.height * s);
+      c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+      if (bmp.close) bmp.close();
+      var blob = await new Promise(function (res) { c.toBlob(res, 'image/jpeg', 0.9); });
+      return blob || file;
+    } catch (e) { return file; }
+  }
+  async function handleFile(file) {
+    setErr('err3', '');
+    if (!file) return;
+    if (!/^image\//.test(file.type) && !/\.(jpe?g|png|webp|gif|heic|heif)$/i.test(file.name || '')) {
+      return setErr('err3', 'That file is not an image. Choose a JPEG, PNG or WebP photo.');
+    }
+    var blob = await normalize(file);
+    if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].indexOf(blob.type) === -1) {
+      return setErr('err3', 'This photo format cannot be read here. Try a JPEG or PNG photo.');
+    }
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    photo = blob; photoUrl = URL.createObjectURL(blob);
+    renderPhoto();
+  }
+  function renderPhoto() {
+    var img = $('#prev');
+    if (photo) { img.src = photoUrl; img.hidden = false; } else { img.removeAttribute('src'); img.hidden = true; }
+    $('#dropEmpty').hidden = !!photo;
+    $('#drop').classList.toggle('has', !!photo);
+    $('#btnRemove').hidden = !photo;
+    $('#btnCam').className = photo ? 'btn ghost' : 'btn primary';
+    $('#btnCam').textContent = photo ? 'Retake' : 'Take a photo';
+    syncAnalyze();
+  }
+  function clearPhoto() {
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    photo = null; photoUrl = null;
+    $('#camInput').value = ''; $('#fileInput').value = '';
+    renderPhoto();
+  }
+  $('#btnCam').addEventListener('click', function () { $('#camInput').click(); });
+  $('#btnPick').addEventListener('click', function () { $('#fileInput').click(); });
+  $('#btnRemove').addEventListener('click', clearPhoto);
+  $('#camInput').addEventListener('change', function (e) { handleFile(e.target.files[0]); });
+  $('#fileInput').addEventListener('change', function (e) { handleFile(e.target.files[0]); });
+  var drop = $('#drop');
+  drop.addEventListener('click', function () { if (!photo) $('#fileInput').click(); });
+  drop.addEventListener('keydown', function (e) { if ((e.key === 'Enter' || e.key === ' ') && !photo) { e.preventDefault(); $('#fileInput').click(); } });
+  ['dragenter', 'dragover'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+  ['dragleave', 'drop'].forEach(function (ev) { drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+  drop.addEventListener('drop', function (e) { var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; handleFile(f); });
+  $('#f').addEventListener('submit', function (e) { e.preventDefault(); });
+
+  // ---------- Prompt ----------
+  function buildPrompt(a, withPhoto) {
+    return [
+      'You are the analysis engine of a skincare education web app built for a university course project. You are not a doctor and you must not diagnose disease. You look at skin only.',
+      '',
+      "THE PERSON'S ANSWERS (JSON):",
+      JSON.stringify(a),
+      '',
+      withPhoto
+        ? "A photo of the person's face or skin is attached. Judge only what is visible: redness, dark or brown marks, pimples and blackheads, shine, visible pores, dry or flaking patches, texture, under-eye darkness, fine lines. Combine it with the answers."
+        : 'No photo was provided. Base everything on the answers and set "source" to "answers" on every finding.',
+      '',
+      'RULES',
+      '1. Describe skin only. Never comment on attractiveness, age, ethnicity, gender or identity.',
+      '2. Use plain descriptive terms such as "inflammatory pimples", "flat brown marks consistent with post-inflammatory hyperpigmentation", "redness", "visible flaking". A photo cannot prove a diagnosis or the state of the skin barrier, so word these as signs and set confidence honestly. Do not name a disease as a diagnosis.',
+      '3. Allergies: never recommend an ingredient or product that contains anything the person listed. When unsure, say what to check in the "check" field.',
+      '4. If pregnant_trying_or_breastfeeding is true: no retinoids (retinol, retinal, adapalene, tretinoin) and tell them to confirm any other active ingredient with their doctor. Prefer azelaic acid, niacinamide, ceramides and mineral sunscreen.',
+      '5. If age_range is "Under 18": keep the routine short and gentle, no retinoids and no strong acids, and suggest a pharmacist or doctor for acne that persists.',
+      '6. Introduce one active at a time, and mention a patch test on the inner arm or behind the ear for any new active.',
+      '7. Prefer ingredients with human clinical evidence: niacinamide, azelaic acid, adapalene, benzoyl peroxide, salicylic acid, ceramides, hyaluronic acid, vitamin C, broad-spectrum SPF 30 or higher. Never invent study citations, authors or numbers. General statements about the strength of the evidence are fine.',
+      '8. In "examples" name only real, widely sold products you are confident exist. If you are not sure, leave the list empty and give ingredient guidance only. Formulas change, so the "check" field tells the person what to confirm on the label.',
+      '9. The morning routine always ends with sunscreen. Use sun_reaction to choose SPF and to judge how likely dark marks are to linger.',
+      '10. Keep every text value short and in plain English for a student. No markdown.',
+      withPhoto ? '11. If the photo is too dark, blurry, cropped or not skin, set photo.usable to false, explain in photo.note, and rely on the answers.' : '',
+      '',
+      'Reply with ONLY one JSON object with exactly these keys:',
+      '{',
+      ' "photo": {"usable": true or false, "note": "one short sentence about lighting, focus and angle, or why it could not be used"},',
+      ' "summary": "2 to 3 sentences describing the overall skin picture",',
+      ' "skin_type": "oily, dry, combination, normal or sensitive-leaning, with a short reason",',
+      ' "barrier": {"status": "healthy" or "stressed" or "compromised", "note": "1 to 2 sentences naming the signs (tightness, flaking, redness, stinging) and whether they come from the photo or the answers"},',
+      ' "findings": [ {"name": "...", "severity": integer 1 to 5, "source": "photo" or "answers", "where": "area of the face", "evidence": "what is visible or reported", "cause": "most likely causes in one sentence", "confidence": "low" or "medium" or "high"} ]  (2 to 6 items, most important first),',
+      ' "routine": {"morning": [STEP], "evening": [STEP], "weekly": [STEP]},',
+      '   where STEP = {"step": "Cleanse", "product_type": "gentle gel cleanser", "ingredients": ["glycerin"], "how": "amount, timing and frequency", "why": "one sentence with the science"}',
+      '   morning has 3 to 5 steps, evening has 3 to 5 steps, weekly has 0 to 2 steps,',
+      ' "products": [ {"category": "Cleanser", "look_for": ["ingredient with strength, e.g. niacinamide 2 to 5 percent"], "examples": ["Brand Product name"], "why": "one sentence", "check": "what to confirm on the label"} ]  (4 to 6 items, at most 2 examples each),',
+      ' "avoid": [ {"item": "...", "reason": "..."} ]  (up to 5),',
+      ' "habits": [ {"habit": "...", "advice": "what to do instead", "science": "one sentence on the evidence"} ]  (up to 4, based on the habits they reported; empty if none),',
+      ' "timeline": "when to expect visible change for these concerns and when to reassess",',
+      ' "see_a_doctor": ["situations specific to this person, and anything seen that deserves an in-person check"]  (up to 3)',
+      '}'
+    ].filter(function (l) { return l !== ''; }).join('\n');
+  }
+
+  // ---------- Analysis ----------
+  var ERR = {
+    not_granted: 'Claude access was declined for this page. Allow it when asked, then try again.',
+    sampling_disabled: 'Claude is not available for this account.',
+    session_expired: 'Your session expired. Sign in again, then try again.',
+    rate_limited: 'Too many requests, or your Claude usage limit was reached. Wait a few minutes and try again.',
+    image_rejected: 'That photo could not be read. Remove it and try another one.',
+    refused: 'Claude could not analyze this input. Try a different photo, or skip the photo.',
+    invalid_json: 'The report came back in a format this page could not read. Try again.',
+    empty_completion: 'No report came back. Try again.',
+    upstream_error: 'The connection dropped before the report finished. Try again.'
+  };
+  function setProgress(len) {
+    var bar = $('#bar');
+    bar.classList.remove('indeterminate');
+    var pct = Math.min(96, Math.round(len / 55));
+    $('#barFill').style.width = pct + '%';
+    bar.setAttribute('aria-valuenow', String(pct));
+  }
+  async function analyze(withPhoto) {
+    if (busy) return;
+    await aiReady;
+    if (!sample) { updateAi(); return setErr('err3', 'The analysis is not available in this view.'); }
+    if (withPhoto && !photo) return;
+    setErr('err3', '');
+    var answers = collect(); lastAnswers = answers; var t0 = Date.now();
+
+    var vis = $('#workVisual');
+    vis.textContent = '';
+    if (withPhoto) vis.append(h('div', { class: 'scanbox' }, h('img', { src: photoUrl, alt: 'Your photo being analyzed' })));
+    else vis.append(h('div', { class: 'answers-only' }, h('p', { text: 'Building your plan from your answers' })));
+    $('#s1').className = 'doing'; $('#s2').className = '';
+    var bar = $('#bar'); bar.classList.add('indeterminate'); $('#barFill').style.width = '';
+    bar.removeAttribute('aria-valuenow');
+
+    busy = true; goTo(3); showPanel('pw');
+    ctl = new AbortController();
+    var opts = {
+      signal: ctl.signal, cache: false, modelTier: 'default',
+      onText: function (u) { $('#s1').className = 'done'; $('#s2').className = 'doing'; setProgress(u.text.length); }
+    };
+    if (withPhoto) opts.images = [photo];
+    try {
+      var data = await sample.json(buildPrompt(answers, withPhoto), opts);
+      if (!data || typeof data !== 'object' || !data.routine) throw { code: 'invalid_json' };
+      result = data;
+      renderReport(data, withPhoto);
+      if (HOOK.onReport) { try { HOOK.onReport(data, answers, withPhoto, Date.now() - t0); } catch (e) {} }
+      busy = false; maxStep = 4; goTo(4);
+    } catch (e) {
+      busy = false;
+      goTo(3);
+      var code = e && e.code;
+      if (code !== 'cancelled') setErr('err3', ERR[code] || ERR.upstream_error);
+      if (code === 'images_unavailable') { imagesOk = false; updateAi(); }
+    } finally {
+      busy = false; ctl = null; syncAnalyze();
+    }
+  }
+  $('#analyze').addEventListener('click', function () { analyze(true); });
+  $('#skip').addEventListener('click', function () { analyze(false); });
+  $('#stop').addEventListener('click', function () { if (ctl) ctl.abort(); });
+
+  // ---------- Report ----------
+  var SEV = ['', 'Mild', 'Mild to moderate', 'Moderate', 'Marked', 'Significant'];
+  function tone(n) { return n <= 2 ? 'good' : (n === 3 ? 'warn' : 'bad'); }
+  function dl(pairs) {
+    return h('dl', null, pairs.filter(function (p) { return p[1]; }).map(function (p) {
+      return h('div', null, h('dt', { text: p[0] }), h('dd', { text: p[1] }));
+    }));
+  }
+  function section(title) {
+    var kids = Array.prototype.slice.call(arguments, 1);
+    return h('section', { class: 'rsec' }, h('h3', { text: title }), kids);
+  }
+  function tags(list, cls) { return list.length ? h('div', { class: 'taglist' }, list.map(function (t) { return h('span', { class: cls || 'tag plain', text: str(t) }); })) : null; }
+
+  function findingCard(f) {
+    var sev = Math.max(1, Math.min(5, Math.round(Number(f.severity) || 1)));
+    var fromPhoto = str(f.source).toLowerCase() === 'photo';
+    return h('article', { class: 'card' },
+      h('div', { class: 'card-head' },
+        h('strong', { text: str(f.name) }),
+        h('span', { class: 'tag ' + (fromPhoto ? '' : 'plain'), text: fromPhoto ? 'Seen in photo' : 'From your answers' })),
+      h('div', { class: 'meter ' + tone(sev), role: 'img', 'aria-label': 'Level ' + sev + ' of 5' },
+        [1, 2, 3, 4, 5].map(function (i) { return h('i', { class: i <= sev ? 'on' : '' }); })),
+      h('p', { class: 'sev', text: SEV[sev] + ' · confidence ' + (str(f.confidence) || 'medium') }),
+      dl([['Where', str(f.where)], ['What shows', str(f.evidence)], ['Likely cause', str(f.cause)]]));
+  }
+
+  function stepItem(s) {
+    return h('li', { class: 'step' },
+      h('div', null,
+        h('div', { class: 'step-head' }, h('strong', { text: str(s.step) }), s.product_type ? h('span', { class: 'tag', text: str(s.product_type) }) : null),
+        s.how ? h('p', { text: str(s.how) }) : null,
+        s.why ? h('p', { class: 'why', text: str(s.why) }) : null,
+        tags(arr(s.ingredients))));
+  }
+
+  function renderReport(d, withPhoto, saved) {
+    var root = $('#report');
+    root.textContent = '';
+    var usable = !(d.photo && d.photo.usable === false);
+
+    var head = h('div', { class: 'report-head' + (withPhoto ? '' : ' nophoto') },
+      withPhoto ? h('img', { src: photoUrl, alt: 'Your photo' }) : null,
+      h('div', null,
+        h('p', { text: str(d.summary), style: 'margin:0' }),
+        h('div', { class: 'meta' },
+          d.skin_type ? h('span', { class: 'tag', text: 'Skin type: ' + str(d.skin_type) }) : null,
+          withPhoto && d.photo && d.photo.note ? h('span', { class: 'tag plain', text: 'Photo: ' + str(d.photo.note) }) : null,
+          (!withPhoto && !saved) ? h('span', { class: 'tag plain', text: 'Based on your answers only' }) : null)));
+    root.append(h('div', { style: 'margin-top:14px' }, head));
+
+    if (withPhoto && !usable) root.append(h('p', { class: 'error', style: 'margin-top:16px', text: 'The photo could not be used, so this report relies on your answers. Retake it in daylight for a more accurate result.' }));
+
+    var findings = arr(d.findings);
+    if (findings.length) root.append(section('What Claude found', h('div', { class: 'cards' }, findings.map(findingCard))));
+
+    if (d.barrier) {
+      var bs = str(d.barrier.status).toLowerCase();
+      var bt = bs === 'healthy' ? 'good' : (bs === 'stressed' ? 'warn' : 'bad');
+      root.append(section('Skin barrier',
+        h('div', { class: 'barrier' },
+          h('span', { class: 'pill ' + bt, text: bs.charAt(0).toUpperCase() + bs.slice(1) }),
+          h('p', { style: 'margin:0', text: str(d.barrier.note) }))));
+    }
+
+    var R = d.routine || {};
+    var sets = [['morning', 'Morning', arr(R.morning)], ['evening', 'Evening', arr(R.evening)], ['weekly', 'Weekly', arr(R.weekly)]].filter(function (s) { return s[2].length; });
+    if (sets.length) {
+      var list = h('ol', { class: 'steps' });
+      var tabs = h('div', { class: 'tabs', role: 'tablist' });
+      var select = function (i) {
+        $$('button', tabs).forEach(function (b, j) { b.setAttribute('aria-selected', j === i ? 'true' : 'false'); });
+        list.textContent = '';
+        sets[i][2].forEach(function (s) { list.append(stepItem(s)); });
+      };
+      sets.forEach(function (s, i) {
+        tabs.append(h('button', { type: 'button', role: 'tab', text: s[1], onclick: function () { select(i); } }));
+      });
+      select(0);
+      root.append(section('Your routine', tabs, list));
+    }
+
+    var products = arr(d.products);
+    if (products.length) {
+      root.append(section('Product guide', h('div', { class: 'cards' }, products.map(function (p) {
+        return h('article', { class: 'card' },
+          h('div', { class: 'card-head' }, h('strong', { text: str(p.category) })),
+          h('div', { class: 'label', text: 'Look for' }), tags(arr(p.look_for), 'tag'),
+          arr(p.examples).length ? h('p', { style: 'margin:12px 0 0' }, h('span', { class: 'label', text: 'Examples ' }), arr(p.examples).map(str).join('; ')) : null,
+          p.why ? h('p', { style: 'margin:10px 0 0', text: str(p.why) }) : null,
+          p.check ? h('p', { class: 'why', style: 'margin:10px 0 0' }, h('span', { class: 'label', text: 'Check the label ' }), str(p.check)) : null);
+      }))));
+    }
+
+    var avoid = arr(d.avoid);
+    if (avoid.length) {
+      root.append(section('What to avoid', h('div', { class: 'list' }, avoid.map(function (a) {
+        return h('div', { class: 'row' }, h('strong', { text: str(a.item) }), h('p', { class: 'why', text: str(a.reason) }));
+      }))));
+    }
+
+    var habits = arr(d.habits);
+    if (habits.length) {
+      root.append(section('Habits that matter', h('div', { class: 'list' }, habits.map(function (x) {
+        return h('div', { class: 'row' },
+          h('strong', { text: str(x.habit) }),
+          h('p', { text: str(x.advice) }),
+          x.science ? h('p', { class: 'why' }, h('span', { class: 'label', text: 'Evidence ' }), str(x.science)) : null);
+      }))));
+    }
+
+    if (d.timeline) root.append(section('What to expect', h('p', { style: 'margin:0', text: str(d.timeline) })));
+
+    var docs = arr(d.see_a_doctor);
+    if (docs.length) {
+      root.append(section('When to see a professional',
+        h('div', { class: 'callout' }, h('ul', { style: 'margin:0' }, docs.map(function (t) { return h('li', { text: str(t) }); })))));
+    }
+
+    var catSec = HOOK.catalog ? HOOK.catalog(d, lastAnswers || {}) : null;
+    if (catSec) root.append(catSec);
+
+    root.append(h('p', { class: 'disclaimer', text: 'This report is educational and written by an AI from a photo and your answers. It is not a medical diagnosis. A photo cannot show everything about your skin. Patch test new products, add one active at a time, and see a doctor or dermatologist for painful, spreading, bleeding or changing spots, or acne that does not improve.' }));
+
+    var copyNote = h('span', { class: 'hint', style: 'margin:0' });
+    var box = h('div');
+    root.append(h('div', { class: 'actions', style: 'margin-top:22px' },
+      h('div', { class: 'right' },
+        h('button', { type: 'button', class: 'btn primary', text: 'Copy my plan', onclick: function () { copyPlan(copyNote, box); } }),
+        h('button', { type: 'button', class: 'btn ghost', text: 'Start over', onclick: startOver }),
+        copyNote)));
+    root.append(box);
+  }
+
+  function planText(d) {
+    var L = ['SKINSENSE PLAN', '', str(d.summary)];
+    var R = d.routine || {};
+    [['morning', 'MORNING'], ['evening', 'EVENING'], ['weekly', 'WEEKLY']].forEach(function (p) {
+      var steps = arr(R[p[0]]);
+      if (!steps.length) return;
+      L.push('', p[1]);
+      steps.forEach(function (s, i) { L.push((i + 1) + '. ' + str(s.step) + ' (' + str(s.product_type) + '): ' + str(s.how)); });
+    });
+    var pr = arr(d.products);
+    if (pr.length) { L.push('', 'PRODUCT GUIDE'); pr.forEach(function (p) { L.push('- ' + str(p.category) + ': look for ' + arr(p.look_for).join(', ') + (arr(p.examples).length ? ' (e.g. ' + arr(p.examples).join('; ') + ')' : '')); }); }
+    var av = arr(d.avoid);
+    if (av.length) { L.push('', 'AVOID'); av.forEach(function (a) { L.push('- ' + str(a.item) + ': ' + str(a.reason)); }); }
+    L.push('', 'Educational only, not a medical diagnosis.');
+    return L.join('\n');
+  }
+  async function copyPlan(note, box) {
+    var text = planText(result);
+    try {
+      await navigator.clipboard.writeText(text);
+      note.textContent = 'Copied.';
+    } catch (e) {
+      box.textContent = '';
+      var ta = h('textarea', { class: 'copybox', readonly: true, 'aria-label': 'Your plan as text' });
+      ta.value = text;
+      box.append(ta);
+      ta.focus(); ta.select();
+      note.textContent = 'Press Ctrl+C or Cmd+C to copy.';
+    }
+  }
+
+  function startOver() {
+    $('#f').reset();
+    clearPhoto();
+    result = null; maxStep = 1;
+    $('#report').textContent = '';
+    setErr('err1', ''); setErr('err3', '');
+    goTo(1);
+  }
+
+  HOOK.open = function (d, a) { lastAnswers = a || {}; result = d; renderReport(d, false, true); maxStep = 4; goTo(4); };
+  goTo(1);
+})();
+</script>
+<script>
+(function () {
+  'use strict';
+  var H = window.SSHook || (window.SSHook = {});
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var arr = function (x) { return Array.isArray(x) ? x : []; };
+  var str = function (x) { return x == null ? '' : (typeof x === 'string' ? x : String(x)); };
+  function h(tag, props) {
+    var el = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (v == null || v === false) return;
+      if (k === 'class') el.className = v;
+      else if (k === 'text') el.textContent = v;
+      else if (k.indexOf('on') === 0) el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    });
+    (function add(list) { list.forEach(function (kid) {
+      if (kid == null || kid === false) return;
+      if (Array.isArray(kid)) return add(kid);
+      el.append(kid.nodeType ? kid : document.createTextNode(String(kid)));
+    }); })(Array.prototype.slice.call(arguments, 2));
+    return el;
+  }
+
+  var CONCERNS = [['acne', 'Pimples and breakouts'], ['blackheads', 'Blackheads'], ['dark spots', 'Dark spots or marks'], ['redness', 'Redness'], ['dryness', 'Dryness or flaking'], ['oiliness', 'Excess oil'], ['pores', 'Large pores'], ['fine lines', 'Fine lines'], ['dullness', 'Dull tone'], ['dark circles', 'Dark circles'], ['sensitivity', 'Stinging or sensitivity'], ['texture', 'Rough texture']];
+  var ALLERGENS = [['fragrance', 'Fragrance'], ['essential oils', 'Essential oils'], ['tree nut oils', 'Tree nut oils'], ['lanolin', 'Lanolin'], ['sulfates', 'Sulfates'], ['drying alcohols', 'Drying alcohols'], ['salicylates', 'Salicylates'], ['certain preservatives', 'Certain preservatives'], ['chemical sunscreen filters', 'Chemical sunscreen filters']];
+  var CATS = ['Cleanser', 'Moisturizer', 'Sunscreen', 'Treatment', 'Serum', 'Barrier repair', 'Exfoliant', 'Eye care'];
+
+  var db = null, user = null, uid = null, isAdmin = false, canWrite = true;
+  var catalog = [];
+  var VIEWS = ['analyze', 'history', 'catalog', 'usage'];
+  var current = 'analyze';
+
+  function show(v) {
+    current = v;
+    VIEWS.forEach(function (id) { $('#v-' + id).hidden = (id !== v); });
+    $$('#nav button').forEach(function (b) { if (b.dataset.view === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
+    if (v === 'history') loadHistory();
+    if (v === 'catalog') renderCatalog();
+    if (v === 'usage') loadUsage();
+  }
+  $$('#nav button').forEach(function (b) { b.addEventListener('click', function () { show(b.dataset.view); }); });
+
+  function fmtDate(ms) {
+    try { return new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }); } catch (e) { return ''; }
+  }
+  function armDelete(btn, action) {
+    var armed = false, t = null;
+    btn.addEventListener('click', function () {
+      if (!armed) {
+        armed = true; btn.textContent = 'Confirm delete'; btn.classList.add('armed');
+        t = setTimeout(function () { armed = false; btn.textContent = 'Delete'; btn.classList.remove('armed'); }, 4000);
+        return;
+      }
+      clearTimeout(t); btn.disabled = true; action();
+    });
+  }
+
+  // ---------- Sign-in and roles ----------
+  async function init() {
+    try { user = (window.claude && window.claude.use) ? await window.claude.use('user') : null; } catch (e) { user = null; }
+    try { db = (window.claude && window.claude.use) ? await window.claude.use('db') : null; } catch (e) { db = null; }
+    if (user) {
+      try { uid = await user.id(); } catch (e) { uid = null; }
+      try { isAdmin = !!(await user.canEdit()); } catch (e) { isAdmin = false; }
+      try { canWrite = (await user.can('data.write')) !== false; } catch (e) { canWrite = true; }
+    }
+    var signedIn = !!(db && uid);
+    var who = $('#who');
+    who.textContent = signedIn ? (isAdmin ? 'Administrator' : 'User') : 'Guest';
+    who.className = 'role' + (signedIn && isAdmin ? ' admin' : '');
+    $('#nav-history').hidden = !signedIn;
+    $('#nav-catalog').hidden = !(signedIn && isAdmin);
+    $('#nav-usage').hidden = !(signedIn && isAdmin);
+    $('#nav').hidden = !signedIn;
+    $('#guest-note').hidden = signedIn;
+    if (db) {
+      try {
+        db.collection('products').onSnapshot(function (snap) {
+          catalog = snap.docs.map(function (d) { var x = d.data() || {}; x.id = d.id; return x; });
+          if (current === 'catalog') renderCatalog();
+        }, function () { catalog = []; });
+      } catch (e) { catalog = []; }
+    }
+  }
+  var ready = init();
+
+  // ---------- Save after each analysis ----------
+  function weekKey(ms) {
+    var d = new Date(ms); d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  H.onReport = async function (d, a, withPhoto, ms) {
+    await ready;
+    var note = h('p', { class: 'hint', id: 'saveNote', text: '' });
+    $('#report').append(note);
+    if (!db || !uid) { note.textContent = 'Not saved. Sign in to Claude to keep a history of your reports.'; return; }
+    var now = Date.now();
+    var findings = arr(d.findings).slice(0, 6).map(function (f) { return { name: str(f.name).slice(0, 80), severity: Number(f.severity) || 1 }; });
+    var doc = {
+      createdAt: now, withPhoto: !!withPhoto,
+      skinType: str(d.skin_type).slice(0, 160), barrier: str(d.barrier && d.barrier.status).slice(0, 20),
+      summary: str(d.summary).slice(0, 600), concerns: arr(a.concerns), findings: findings,
+      answers: a, report: d
+    };
+    doc.search = [doc.summary, doc.skinType, doc.concerns.join(' '), findings.map(function (f) { return f.name; }).join(' ')].join(' ').toLowerCase();
+    try {
+      await db.collection('data/users/' + uid).add(doc);
+      note.textContent = 'Saved to My history. Your photo is not stored.';
+    } catch (e) {
+      note.textContent = 'This report could not be saved (' + (e && e.code ? e.code : 'error') + '). Ask the owner to share the page with you as a Contributor.';
+      return;
+    }
+    try {
+      var ref = db.collection('usage').doc(uid), runs = [];
+      try { var cur = await ref.get(); if (cur.exists) runs = arr((cur.data() || {}).runs); } catch (e) { runs = []; }
+      runs.push({
+        createdAt: now, week: weekKey(now), withPhoto: !!withPhoto, concerns: arr(a.concerns),
+        skinType: str(d.skin_type).split(/[ ,.;:-]/)[0].toLowerCase(), barrier: doc.barrier,
+        seconds: Math.round((ms || 0) / 1000)
+      });
+      await ref.set({ runs: runs.slice(-200) });
+    } catch (e) { /* usage statistics are optional */ }
+  };
+
+  // ---------- History: view, search, delete ----------
+  var historyDocs = [];
+  async function loadHistory() {
+    var box = $('#history-list');
+    box.textContent = '';
+    box.append(h('p', { class: 'fine', text: 'Loading your reports…' }));
+    await ready;
+    if (!db || !uid) { box.textContent = ''; box.append(h('div', { class: 'empty', text: 'Sign in to Claude to see your saved reports.' })); return; }
+    try {
+      var snap = await db.collection('data/users/' + uid).orderBy('createdAt', 'desc').limit(100).get();
+      historyDocs = snap.docs.map(function (d) { var x = d.data() || {}; return { id: d.id, ref: d.ref, data: x }; });
+    } catch (e) {
+      box.textContent = '';
+      box.append(h('div', { class: 'empty', text: 'Your history could not be loaded (' + (e && e.code ? e.code : 'error') + '). Try again later.' }));
+      return;
+    }
+    var sel = $('#history-concern');
+    var keep = sel.value;
+    sel.textContent = '';
+    sel.append(h('option', { value: '', text: 'All concerns' }));
+    var seen = {};
+    historyDocs.forEach(function (x) { arr(x.data.concerns).forEach(function (c) { seen[c] = 1; }); });
+    Object.keys(seen).sort().forEach(function (c) { sel.append(h('option', { value: c, text: c })); });
+    sel.value = keep && seen[keep] ? keep : '';
+    renderHistory();
+  }
+  function renderHistory() {
+    var box = $('#history-list');
+    box.textContent = '';
+    var q = $('#history-q').value.trim().toLowerCase();
+    var c = $('#history-concern').value;
+    var rows = historyDocs.filter(function (x) {
+      return (!q || str(x.data.search).indexOf(q) !== -1) && (!c || arr(x.data.concerns).indexOf(c) !== -1);
+    });
+    $('#history-count').textContent = rows.length + ' of ' + historyDocs.length + ' reports';
+    if (!historyDocs.length) { box.append(h('div', { class: 'empty', text: 'No saved reports yet. Run an analysis and it will appear here.' })); return; }
+    if (!rows.length) { box.append(h('div', { class: 'empty', text: 'No report matches your search.' })); return; }
+    rows.forEach(function (x) {
+      var d = x.data;
+      var del = h('button', { type: 'button', class: 'btn small danger', text: 'Delete' });
+      armDelete(del, async function () {
+        try { await x.ref.delete(); historyDocs = historyDocs.filter(function (y) { return y.id !== x.id; }); renderHistory(); }
+        catch (e) { del.disabled = false; del.textContent = 'Could not delete'; }
+      });
+      box.append(h('article', { class: 'list-row' },
+        h('div', null,
+          h('h3', { text: fmtDate(d.createdAt) + (d.withPhoto ? ' · with photo' : ' · answers only') }),
+          h('p', { text: str(d.summary).slice(0, 180) + (str(d.summary).length > 180 ? '…' : '') }),
+          h('div', { class: 'taglist' },
+            arr(d.concerns).map(function (cn) { return h('span', { class: 'tag plain', text: cn }); }),
+            d.barrier ? h('span', { class: 'tag', text: 'Barrier: ' + d.barrier }) : null)),
+        h('div', { class: 'row-actions' },
+          h('button', { type: 'button', class: 'btn small ghost', text: 'View', onclick: function () { if (H.open) H.open(d.report, d.answers); show('analyze'); } }),
+          del)));
+    });
+  }
+  $('#history-q').addEventListener('input', renderHistory);
+  $('#history-concern').addEventListener('change', renderHistory);
+
+  // ---------- Catalog (administrator) ----------
+  var editing = null;
+  function checkGroup(name, list, selected) {
+    return h('div', { class: 'chips' }, list.map(function (p) {
+      var i = h('input', { type: 'checkbox', name: name, value: p[0] });
+      i.checked = selected.indexOf(p[0]) !== -1;
+      return h('label', { class: 'chip' }, i, h('span', { text: p[1] }));
+    }));
+  }
+  function checked(form, name) { return $$('input[name="' + name + '"]:checked', form).map(function (i) { return i.value; }); }
+  function renderForm() {
+    var box = $('#catalog-form');
+    box.textContent = '';
+    var p = editing || { name: '', category: 'Cleanser', ingredients: [], helps: [], allergens: [], retinoid: false, strongAcid: false, active: true };
+    var form = h('form', { class: 'formcard', novalidate: true });
+    var err = h('p', { class: 'error', hidden: true, role: 'alert' });
+    var nm = h('input', { type: 'text', id: 'cat-name', maxlength: '80', value: p.name });
+    var cat = h('select', { id: 'cat-cat' }, CATS.map(function (c) { var o = h('option', { text: c }); if (c === p.category) o.selected = true; return o; }));
+    var ing = h('input', { type: 'text', id: 'cat-ing', maxlength: '300', value: arr(p.ingredients).join(', '), placeholder: 'glycerin, ceramides, niacinamide' });
+    var flags = h('div', null,
+      h('label', { class: 'check' }, h('input', { type: 'checkbox', id: 'cat-ret' }), h('span', { text: 'Contains a retinoid (retinol, adapalene, tretinoin)' })),
+      h('label', { class: 'check' }, h('input', { type: 'checkbox', id: 'cat-acid' }), h('span', { text: 'Contains a strong exfoliating acid' })),
+      h('label', { class: 'check' }, h('input', { type: 'checkbox', id: 'cat-active' }), h('span', { text: 'Active (shown to users)' })));
+    form.append(
+      h('h3', { style: 'margin:0 0 12px', text: editing ? 'Edit product' : 'Add a product' }),
+      err,
+      h('div', { class: 'two' },
+        h('div', null, h('label', { class: 'field-label', for: 'cat-name', text: 'Product name' }), nm),
+        h('div', null, h('label', { class: 'field-label', for: 'cat-cat', text: 'Category' }), cat)),
+      h('div', { style: 'margin-bottom:14px' }, h('label', { class: 'field-label', for: 'cat-ing', text: 'Key ingredients (comma separated)' }), ing),
+      h('fieldset', null, h('legend', { text: 'Helps with' }), checkGroup('helps', CONCERNS, arr(p.helps))),
+      h('fieldset', null, h('legend', { text: 'Contains these allergen groups' }), checkGroup('allergens', ALLERGENS, arr(p.allergens))),
+      flags,
+      h('div', { class: 'actions' },
+        h('div', { class: 'right' },
+          h('button', { type: 'submit', class: 'btn primary', text: editing ? 'Save changes' : 'Add product' }),
+          editing ? h('button', { type: 'button', class: 'btn ghost', text: 'Cancel', onclick: function () { editing = null; renderForm(); } }) : null)));
+    $('#cat-ret', form).checked = !!p.retinoid; $('#cat-acid', form).checked = !!p.strongAcid; $('#cat-active', form).checked = p.active !== false;
+    form.addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var name = nm.value.trim();
+      if (!name) { err.textContent = 'Enter a product name.'; err.hidden = false; return; }
+      if (!isAdmin) { err.textContent = 'Only an administrator can change the catalog.'; err.hidden = false; return; }
+      var data = {
+        name: name.slice(0, 80), category: cat.value,
+        ingredients: ing.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean).slice(0, 20),
+        helps: checked(form, 'helps'), allergens: checked(form, 'allergens'),
+        retinoid: $('#cat-ret', form).checked, strongAcid: $('#cat-acid', form).checked, active: $('#cat-active', form).checked,
+        updatedAt: Date.now()
+      };
+      try {
+        if (editing) await db.collection('products').doc(editing.id).set(data);
+        else await db.collection('products').add(data);
+        editing = null; renderForm();
+      } catch (ex) { err.textContent = 'The product could not be saved (' + (ex && ex.code ? ex.code : 'error') + ').'; err.hidden = false; }
+    });
+    box.append(form);
+  }
+  function renderCatalog() {
+    if (!isAdmin) { $('#catalog-list').textContent = 'Only an administrator can open this page.'; return; }
+    if (!$('#catalog-form').firstChild) renderForm();
+    var box = $('#catalog-list');
+    box.textContent = '';
+    var q = $('#catalog-q').value.trim().toLowerCase();
+    var rows = catalog.filter(function (p) {
+      return !q || (str(p.name) + ' ' + str(p.category) + ' ' + arr(p.ingredients).join(' ')).toLowerCase().indexOf(q) !== -1;
+    }).sort(function (a, b) { return str(a.category).localeCompare(str(b.category)) || str(a.name).localeCompare(str(b.name)); });
+    $('#catalog-count').textContent = rows.length + ' of ' + catalog.length + ' products';
+    if (!catalog.length) { box.append(h('div', { class: 'empty', text: 'The catalog is empty. Add the first product above.' })); return; }
+    if (!rows.length) { box.append(h('div', { class: 'empty', text: 'No product matches your search.' })); return; }
+    rows.forEach(function (p) {
+      var del = h('button', { type: 'button', class: 'btn small danger', text: 'Delete' });
+      armDelete(del, async function () {
+        try { await db.collection('products').doc(p.id).delete(); } catch (e) { del.disabled = false; del.textContent = 'Could not delete'; }
+      });
+      box.append(h('article', { class: 'list-row' },
+        h('div', null,
+          h('h3', { text: str(p.name) }),
+          h('p', { class: 'fine', text: str(p.category) + (arr(p.ingredients).length ? ' · ' + arr(p.ingredients).join(', ') : '') }),
+          h('div', { class: 'taglist' },
+            p.active === false ? h('span', { class: 'tag plain', text: 'Hidden' }) : h('span', { class: 'tag', text: 'Active' }),
+            arr(p.helps).map(function (x) { return h('span', { class: 'tag plain', text: x }); }),
+            arr(p.allergens).map(function (x) { return h('span', { class: 'tag plain', text: 'contains ' + x }); }),
+            p.retinoid ? h('span', { class: 'tag plain', text: 'retinoid' }) : null,
+            p.strongAcid ? h('span', { class: 'tag plain', text: 'strong acid' }) : null)),
+        h('div', { class: 'row-actions' },
+          h('button', { type: 'button', class: 'btn small ghost', text: 'Edit', onclick: function () { editing = p; renderForm(); window.scrollTo({ top: 0 }); } }),
+          del)));
+    });
+  }
+  $('#catalog-q').addEventListener('input', renderCatalog);
+
+  // ---------- Usage report (administrator) ----------
+  function bars(rows, total) {
+    var max = Math.max.apply(null, rows.map(function (r) { return r[1]; }).concat([1]));
+    return h('div', { class: 'hbars' }, rows.map(function (r) {
+      return h('div', { class: 'hbar' }, h('span', { text: r[0] }),
+        h('span', { class: 'track', 'aria-hidden': 'true' }, h('i', { style: 'width:' + Math.round(r[1] / max * 100) + '%' })),
+        h('span', { class: 'n', text: String(r[1]) }));
+    }));
+  }
+  async function loadUsage() {
+    var box = $('#usage-body');
+    box.textContent = '';
+    await ready;
+    if (!db || !isAdmin) { box.append(h('div', { class: 'empty', text: 'Only an administrator can open this page.' })); return; }
+    box.append(h('p', { class: 'fine', text: 'Loading…' }));
+    var docs;
+    try { var snap = await db.collection('usage').limit(500).get(); docs = []; snap.docs.forEach(function (d) { arr((d.data() || {}).runs).forEach(function (r) { docs.push(r); }); }); }
+    catch (e) { box.textContent = ''; box.append(h('div', { class: 'empty', text: 'The report could not be loaded (' + (e && e.code ? e.code : 'error') + ').' })); return; }
+    box.textContent = '';
+    if (!docs.length) { box.append(h('div', { class: 'empty', text: 'No analyses have been recorded yet.' })); return; }
+    var withPhoto = docs.filter(function (d) { return d.withPhoto; }).length;
+    var secs = docs.map(function (d) { return Number(d.seconds) || 0; }).filter(Boolean);
+    var avg = secs.length ? Math.round(secs.reduce(function (a, b) { return a + b; }, 0) / secs.length) : 0;
+    box.append(h('div', { class: 'stat-grid' },
+      h('div', { class: 'stat' }, h('b', { text: String(docs.length) }), h('span', { text: 'analyses recorded' })),
+      h('div', { class: 'stat' }, h('b', { text: Math.round(withPhoto / docs.length * 100) + '%' }), h('span', { text: 'included a photo' })),
+      h('div', { class: 'stat' }, h('b', { text: avg ? avg + ' s' : 'n/a' }), h('span', { text: 'average time to report' })),
+      h('div', { class: 'stat' }, h('b', { text: String(catalog.length) }), h('span', { text: 'products in the catalog' }))));
+    var wk = {}, cn = {}, sk = {}, br = {};
+    docs.forEach(function (d) {
+      wk[d.week] = (wk[d.week] || 0) + 1;
+      arr(d.concerns).forEach(function (c) { cn[c] = (cn[c] || 0) + 1; });
+      if (d.skinType) sk[d.skinType] = (sk[d.skinType] || 0) + 1;
+      if (d.barrier) br[d.barrier] = (br[d.barrier] || 0) + 1;
+    });
+    function top(o, n) { return Object.keys(o).map(function (k) { return [k, o[k]]; }).sort(function (a, b) { return b[1] - a[1]; }).slice(0, n); }
+    var weeks = Object.keys(wk).sort().slice(-8).map(function (k) { return ['Week of ' + k, wk[k]]; });
+    box.append(h('h3', { text: 'Analyses per week' }), bars(weeks),
+      h('h3', { text: 'Most common concerns' }), bars(top(cn, 8)),
+      h('h3', { text: 'Skin types reported by the AI' }), bars(top(sk, 6)),
+      h('h3', { text: 'Skin barrier status' }), bars(top(br, 4)),
+      h('p', { class: 'fine', text: 'These figures are anonymous counts. They contain no names, photos or answers that identify a person.' }));
+  }
+
+  // ---------- Catalog rule engine: shown inside each report ----------
+  H.catalog = function (d, a) {
+    if (!catalog.length) return null;
+    var allergies = arr(a.allergies);
+    var other = str(a.other_allergies_or_irritants).toLowerCase().split(/[^a-z]+/).filter(function (w) { return w.length >= 4; });
+    var preg = !!a.pregnant_trying_or_breastfeeding, under18 = a.age_range === 'Under 18';
+    var concerns = arr(a.concerns);
+    var cats = arr(d.products).map(function (p) { return str(p.category).toLowerCase(); });
+    var essential = ['cleanser', 'moisturizer', 'sunscreen'];
+    var shown = [], hidden = [];
+    catalog.forEach(function (p) {
+      if (p.active === false) return;
+      var cat = str(p.category).toLowerCase();
+      var match = arr(p.helps).filter(function (c) { return concerns.indexOf(c) !== -1; });
+      var relevant = match.length || essential.indexOf(cat) !== -1 || cats.some(function (c) { return c.indexOf(cat) !== -1; });
+      if (!relevant) return;
+      var why = [];
+      if (arr(p.allergens).some(function (x) { return allergies.indexOf(x) !== -1; })) why.push('contains something you listed as an allergy');
+      var ingText = arr(p.ingredients).join(' ').toLowerCase();
+      if (other.some(function (w) { return ingText.indexOf(w) !== -1; })) why.push('contains an ingredient you wrote as an irritant');
+      if (preg && p.retinoid) why.push('retinoids are not advised in pregnancy or breastfeeding');
+      if (under18 && (p.retinoid || p.strongAcid)) why.push('too strong for under 18');
+      (why.length ? hidden : shown).push({ p: p, match: match, why: why });
+    });
+    var perCat = {}, picks = [];
+    shown.sort(function (x, y) { return y.match.length - x.match.length; }).forEach(function (x) {
+      var k = str(x.p.category);
+      perCat[k] = (perCat[k] || 0) + 1;
+      if (perCat[k] <= 2) picks.push(x);
+    });
+    if (!picks.length && !hidden.length) return null;
+    var sec = h('section', { class: 'rsec' }, h('h3', { text: 'From the SkinSense catalog' }),
+      h('p', { class: 'hint', text: 'These products are chosen by fixed safety rules from your answers, not by the AI. Check the label before you buy.' }));
+    if (picks.length) sec.append(h('div', { class: 'cards' }, picks.map(function (x) {
+      return h('article', { class: 'card' },
+        h('div', { class: 'card-head' }, h('strong', { text: str(x.p.name) }), h('span', { class: 'tag plain', text: str(x.p.category) })),
+        arr(x.p.ingredients).length ? h('p', { class: 'why', text: 'Key ingredients: ' + arr(x.p.ingredients).join(', ') }) : null,
+        x.match.length ? h('div', { class: 'taglist' }, x.match.map(function (c) { return h('span', { class: 'tag', text: 'helps with ' + c }); })) : null);
+    })));
+    if (hidden.length) {
+      sec.append(h('details', { class: 'pick-note' },
+        h('summary', { text: hidden.length + ' catalog product' + (hidden.length === 1 ? '' : 's') + ' hidden to keep you safe' }),
+        h('ul', null, hidden.map(function (x) { return h('li', { text: str(x.p.name) + ': ' + x.why.join('; ') }); }))));
+    }
+    return sec;
+  };
+
+  show('analyze');
+})();
+</script>
+
